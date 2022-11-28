@@ -1,22 +1,32 @@
 setwd("~/Desktop/Kaggle/2 Scrabble/scrabble-player-rating")
 rm(list=ls())
-train = read.csv("train.csv")
-test = read.csv("test.csv")
-games = read.csv("games.csv")
-attach(train)
+
+### Load libraries ###
+
 library(ggplot2)
-library(dplyr)library(xgboost)
+library(dplyr)
+library(xgboost)
 library(caTools)
 library(dplyr)
 library(caret)
 library(rpart)
-#gu
 library(rpart.plot)
 library(tidyr)
 library(corrplot)
-# Clean train
-#Combine rows with same game ID
+
+
+### Load Data ###
+
+train = read.csv("train.csv")
+attach(train)
+test = read.csv("test.csv")
+games = read.csv("games.csv")
+turns = read.csv("turns.csv")
+
+### Clean train ###
 games = subset(games,select = -c(winner))
+
+#Combine rows with same game ID
 cleaned_train = train
 clean_train2 = cleaned_train %>% 
   group_by(game_id) %>% 
@@ -58,7 +68,7 @@ dat$rating2 <- gsub("\"","",as.character(dat$rating2))
 dat$rating2 <- gsub(")","",as.character(dat$rating2), fixed = TRUE)
 
 
-# renaming
+# Renaming
 dat = dat %>% 
   rename(
     Player.Nickname = nickname1,
@@ -137,7 +147,17 @@ unique_nicknames = unique(dat$Player.Nickname)
 name_df = data.frame(nickname = unique_nicknames)
 
 
-#Plots
+#Turns
+turns = turns[!(turns$nickname=="STEEBot"|turns$nickname =="BetterBot" 
+                | turns$nickname=="HastyBot"),]
+average_score = aggregate( turns$points ~ turns$game_id, FUN = mean )
+colnames(average_score) = c("game_id", "points_per_turn")
+dat = left_join(dat, average_score)
+# 
+# linear
+plot(dat$Player.Rating~dat$points_per_turn)
+
+
 
 
 
@@ -154,13 +174,6 @@ unique_nicknames = unique(dat$Player.Nickname)
 ind =sample((unique_nicknames), floor(0.7*length(unique_nicknames)))
 
 
-#Tree based
-
-#154
-
-#stevy is a big problem 
-
-#145
 
 
 
@@ -197,18 +210,34 @@ xgb_dat<- xgb.DMatrix(data = as.matrix(x_dat), label = y_dat)
 
 xgb_train <- xgb.DMatrix(data = as.matrix(X_train), label = y_train)
 xgb_test <- xgb.DMatrix(data = as.matrix(X_test), label = y_test)
-xgb_params <- list(
+xgb_params_default <- list(
   booster = "gbtree",
-  eta = 0.1, #made this higher to speed up 
-  max_depth = 4,
-  gamma = 2,
-  subsample = 1, #was 0.9
-  colsample_bytree = 1,
+ # eta = 0.1, #made this higher to speed up 
+ # max_depth = 5,
+ # gamma = 2,
+ # subsample = 1, #was 0.9
+ # colsample_bytree = 1,
   objective = "reg:squarederror",
-  eval_metric = "rmse",
-  lambda = 250
+  eval_metric = "rmse"
+  #lambda = 250
 )
 
+xgbcv <- xgb.cv( params = xgb_params_default, data = xgb_train, nrounds = 200, nfold = 5,
+                 showsd = T, stratified = T, print.every.n = 10,
+                 early.stop.round = 20, maximize = F)
+
+
+xgb_params <- list(
+  booster = "gbtree",
+   eta = 0.1, #made this higher to speed up 
+   max_depth = 5,
+   gamma = 1,
+   subsample = 1, #was 0.9
+   colsample_bytree = 1,
+  objective = "reg:squarederror",
+  eval_metric = "rmse",
+  lambda = 100
+)
 
 
 xgb_model <- xgb.train(
@@ -225,33 +254,40 @@ xgb_preds_full <- predict(xgb_model, as.matrix(x_dat), reshape = TRUE)
 xgb_preds_full <- as.data.frame(xgb_preds_full)
 dat_pred = cbind(dat_original,xgb_preds_full)
 
-sqrt(mean((unlist(val1$Player.Rating-xgb_preds))^2))
-#current is 150
 
-xgbcv <- xgb.cv( params = xgb_params, data = xgb_train, nrounds = 500, nfold = 5,
-                 showsd = T, stratified = T, print.every.n = 10,
-                 early.stop.round = 20, maximize = F)
+sqrt(mean((unlist(val1$Player.Rating-xgb_preds))^2))
+#current is 149.64
+
+
+xgbcv <- xgb.cv( params = xgb_params, data = xgb_train, 
+                 nrounds = 100, nfold = 5, showsd = T, stratified = T, 
+                 print.every.n = 10, early.stop.round = 20, maximize = F)
 #328 9s the best
+
 
 
 xgb1 <- xgb.train (params =  xgb_params, 
                    data = xgb_train, 
-                   nrounds = 45,
+                   nrounds = 90,
                    watchlist = list(val=xgb_test,train=xgb_train), print.every.n = 10, 
                    early.stop.round = 10, maximize = F
                   )
 
-mat <- xgb.importance (feature_names = colnames(X_train),model = xgb1)
+xgb_preds_full2 <- predict(xgb1, as.matrix(X_test), reshape = TRUE)
+xgb_preds_full2 <- as.data.frame(xgb_preds_full2)
+dat_pred2 = cbind(dat_original,xgb_preds_full2)
+
+sqrt(mean((unlist(val1$Player.Rating-xgb_preds_full2))^2))
+
+mat <- xgb.importance (feature_names = colnames(X_train),model = xgb_model)
 xgb.plot.importance (importance_matrix = mat[1:20]) 
 
 
 
 # messing around with graphs
-
+do_graphs = FALSE
+if (do_graphs == TRUE){
 quartz()
-
-
-
 for (i in 1:length(unique_nicknames)){
 
   dat_player = dat_pred[dat_pred$Player.Nickname==unique_nicknames[i],]
@@ -268,16 +304,13 @@ for (i in 1:length(unique_nicknames)){
   print(p)
   Sys.sleep(2)
 }
-
+}
 
 
 # time series 
 
 
-
-
-
-
+### Formatting test data ###
 head(test)
 clean_test = test %>% 
   group_by(game_id) %>% 
@@ -371,27 +404,18 @@ dat_test$Opponent.Rating = as.numeric(dat_test$Opponent.Rating)
 head(dat_test)
 
 dat_test$difference_score = dat_test$Player.Score - dat_test$Opponent.Score 
-###
+
 
 winner = ifelse(dat_test$difference_score>0 , 1,0)
 winner = ifelse(dat_test$difference_score<0 , winner-1,winner)
 dat_test = cbind(dat_test,winner)
-#d_ave_opp_rating  = tapply(draw_df$Opponent.Rating, draw_df$Player.Nickname, mean, simplify = FALSE)
-#d_ave_opp_rating  = data.frame(draw_opponent_rating = d_ave_opp_rating, names = dimnames(d_ave_opp_rating))
-#d_ave_player_rating = tapply(draw_df$Player.Rating, draw_df$Player.Nickname, mean, simplify = FALSE)
-#df3 = cbind(d_ave_opp_rating ,d_ave_player_rating)
-
-
-#dat_ave = cbind(w_ave_opp_rating,w_ave_player_rating,l_ave_opp_rating, l_ave_player_rating)
-# need to drop some columns
 
 colnames(df1)[2] = "Names"
 colnames(df2)[2] = "Names"
-#colnames(df3)[2] = "Names"
+
 colnames(ave_player_rating)[2] = "Names"
 
 join1 = full_join(df1,df2)
-#join2 = full_join(join1, df3)
 join3 = as.data.frame(full_join(join1, ave_player_rating))
 
 
@@ -489,7 +513,7 @@ write.csv(output, file = 'boast_5.3.csv', row.names = F)
 
 
 #IDEAS
-#win ratio
+# win ratio
 # win ratio to that point
-# score per turn 
+# ave score per turn 
 
