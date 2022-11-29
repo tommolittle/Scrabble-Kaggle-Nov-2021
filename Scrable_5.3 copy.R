@@ -296,7 +296,7 @@ sqrt(mean((unlist(val1$Player.Rating-xgb_preds))^2))
 #current is 149.64
 #139???
 
-
+# 111???
 xgbcv <- xgb.cv( params = xgb_params, data = xgb_train, 
                  nrounds = 100, nfold = 5, showsd = T, stratified = T, 
                  print.every.n = 10, early.stop.round = 20, maximize = F)
@@ -565,9 +565,9 @@ xgb_model <- xgb.train(
 
 
 
-xgb_preds <- predict(xgb_model, as.matrix(dat_test), reshape = TRUE)
-xgb_preds <- as.data.frame(xgb_preds)
-output = data.frame(game_id = dat_test_keep$game_id, rating = xgb_preds$xgb_preds)
+xgb_preds2 <- predict(xgb_model, as.matrix(dat_test), reshape = TRUE)
+xgb_preds2 <- as.data.frame(xgb_preds2)
+output = data.frame(game_id = dat_test_keep$game_id, rating = xgb_preds2$xgb_preds2)
 
 write.csv(output, file = 'boast_5.3.prev.game.3.csv', row.names = F)
 
@@ -584,3 +584,5 @@ View(dat_test)
 # ave score per turn 
 # winner is from last game
 
+#IDEAS TO UNMESS THIS
+# maybe it has to do with the lexicon?
