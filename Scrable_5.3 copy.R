@@ -467,7 +467,7 @@ dat_test = cbind(dat_test,winner)
 head(dat_test)
 winner = ifelse(dat_test$difference_score>0 , 1,0)
 winner = ifelse(dat_test$difference_score<0 , winner-1,winner)
-dat_test_keep = dat_test
+
 dat_test = left_join(dat_test, average_score)
 dat_test = left_join(dat_test, games)
 
@@ -482,6 +482,7 @@ dat_test = left_join(dat_test, games)
 
 
 dat_test = dat_test %>% arrange(Player.Nickname,created_at)
+dat_test_keep = dat_test
 dat_behind_test = dat_test[1:nrow(dat_test)-1,]
 dat_behind_test = rbind(dat_test[1,],dat_behind_test)
 dat_behind_test = dat_behind_test %>% 
@@ -569,7 +570,7 @@ xgb_preds2 <- predict(xgb_model, as.matrix(dat_test), reshape = TRUE)
 xgb_preds2 <- as.data.frame(xgb_preds2)
 output = data.frame(game_id = dat_test_keep$game_id, rating = xgb_preds2$xgb_preds2)
 
-write.csv(output, file = 'boast_5.3.prev.game.3.csv', row.names = F)
+write.csv(output, file = 'boast_5.3.prev.game.4.csv', row.names = F)
 
 #to do 
 # add points per turn for second part
@@ -577,6 +578,11 @@ write.csv(output, file = 'boast_5.3.prev.game.3.csv', row.names = F)
 View(test)
 View(turns)
 View(dat_test)
+#plot(dat_test$Player.Score~dat_test$points_per_turn)
+#plot(dat$Player.Score~dat$points_per_turn)
+# so the link is fine
+
+
 
 #IDEAS
 # win ratio
