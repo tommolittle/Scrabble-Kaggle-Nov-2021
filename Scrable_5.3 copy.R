@@ -265,7 +265,7 @@ xgbcv <- xgb.cv( params = xgb_params_default, data = xgb_train, nrounds = 200, n
 xgb_params <- list(
   booster = "gbtree",
    eta = 0.1, #made this higher to speed up 
-   max_depth = 5,
+   max_depth = 6,
    gamma = 1,
    subsample = 1, #was 0.9
    colsample_bytree = 1,
@@ -280,7 +280,7 @@ xgb_params <- list(
 xgb_model <- xgb.train(
   params = xgb_params,
   data = xgb_train,
-  nrounds = 100,
+  nrounds = 90,
   verbose =1
 )
 
@@ -326,13 +326,13 @@ ggplot(dat_player, aes(x = created_at)) +
   geom_point(aes(x = created_at, y=Player.Rating, color = factor(winner)))
 
 # messing around with graphs
-do_graphs = FALSE
+do_graphs = TRUE
 if (do_graphs == TRUE){
 quartz()
-for (i in 1:length(unique_nicknames)){
+for (i in ind){
 
-  dat_player = dat_pred[dat_pred$Player.Nickname==unique_nicknames[i],]
-  title_p = dat_player$Player.Nickname[i]
+  dat_player = dat_pred[dat_pred$Player.Nickname==i,]
+  title_p = i
   p <- ggplot(dat_player, aes(x = created_at)) +
     geom_point(aes(y=Player.Rating, color = "actual"))+
     geom_point(aes(y=xgb_preds_full, color = "prediction"))+
@@ -570,7 +570,7 @@ xgb_preds2 <- predict(xgb_model, as.matrix(dat_test), reshape = TRUE)
 xgb_preds2 <- as.data.frame(xgb_preds2)
 output = data.frame(game_id = dat_test_keep$game_id, rating = xgb_preds2$xgb_preds2)
 
-write.csv(output, file = 'boast_5.3.prev.game.4.csv', row.names = F)
+write.csv(output, file = 'boast_5.3.prev.game.5.csv', row.names = F)
 
 #to do 
 # add points per turn for second part
