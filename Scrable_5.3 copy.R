@@ -185,6 +185,7 @@ dat_behind = dat_behind %>%
     Player.Nickname1 =  Player.Nickname  , 
     Opponent.Nickname1 = Opponent.Nickname,
     Player.Score1 = Player.Score ,
+    Opponent.Score1 = Opponent.Score,
     Player.Rating1 = Player.Rating ,
     Opponent.Rating1 =  Opponent.Rating   , 
      first_number1 = first_number   ,
@@ -274,6 +275,8 @@ xgb_params <- list(
 )
 
 
+
+
 xgb_model <- xgb.train(
   params = xgb_params,
   data = xgb_train,
@@ -289,7 +292,7 @@ xgb_preds_full <- as.data.frame(xgb_preds_full)
 dat_pred = cbind(dat_original,xgb_preds_full)
 
 
-sqrt(mean((unlist(val1$Player.Rating-xgb_preds))^2))
+sqrt(mean((unlist(val1$Player.Rating-xgb_preds))^2)) 
 #current is 149.64
 #139???
 
@@ -413,7 +416,7 @@ dat_test$Player.Rating = as.character(dat_test$Player.Rating)
 dat_test$Opponent.Rating = as.character(dat_test$Opponent.Rating)
 swap_ind_test = ifelse(dat_test$Player.Nickname=="STEEBot"|dat_test$Player.Nickname =="BetterBot" 
                        | dat_test$Player.Nickname=="HastyBot", 0, 1)
-first_number = ifelse(swap_ind_test==1,1, 0)
+first_number = ifelse(swap_ind_test==1,0, 1)
 swap_ind_test = ifelse(dat_test$Player.Nickname=="STEEBot"|dat_test$Player.Nickname =="BetterBot" 
                   | dat_test$Player.Nickname=="HastyBot", NA, 1)
 
@@ -448,37 +451,7 @@ winner = ifelse(dat_test$difference_score>0 , 1,0)
 winner = ifelse(dat_test$difference_score<0 , winner-1,winner)
 dat_test = cbind(dat_test,winner)
 
-colnames(df1)[2] = "Names"
-colnames(df2)[2] = "Names"
 
-colnames(ave_player_rating)[2] = "Names"
-
-join1 = full_join(df1,df2)
-join3 = as.data.frame(full_join(join1, ave_player_rating))
-
-
-
-#trail for difference in rating as base
-
-join3[,1] = unlist(as.character(join3[,1]))
-join3[,2] = unlist(as.character(join3[,2]))
-join3[,3] = unlist(as.character(join3[,3]))
-join3[,4] = unlist(as.character(join3[,4]))
-join3[,5] = unlist(as.character(join3[,5]))
-join3[,6] = unlist(as.character(join3[,6]))
-join3[,7] = unlist(as.character(join3[,7]))
-join3[,8] = unlist(as.character(join3[,8]))
-
-join3[,1] = as.numeric(join3[,1])
-join3[,2] = as.character(join3[,2])
-join3[,3] = as.numeric(join3[,3])
-join3[,4] = as.numeric(join3[,4])
-join3[,5] = as.numeric(join3[,5])
-join3[,6] = as.numeric(join3[,6])
-join3[,7] = as.numeric(join3[,7])
-join3[,8] = as.numeric(join3[,8])
-
-join3 = subset(join3, select = -c(ave_player_rating, w_ave_player_rating, l_ave_player_rating) )
 
 
 
@@ -492,13 +465,15 @@ join3 = subset(join3, select = -c(ave_player_rating, w_ave_player_rating, l_ave_
 
 
 head(dat_test)
-dat_test = left_join(dat_test, average_score)
-dat_test = left_join(dat_test, games)
 winner = ifelse(dat_test$difference_score>0 , 1,0)
 winner = ifelse(dat_test$difference_score<0 , winner-1,winner)
-
-
 dat_test_keep = dat_test
+dat_test = left_join(dat_test, average_score)
+dat_test = left_join(dat_test, games)
+
+
+
+
 #dat_test = subset(dat_test, select = -c(game_id, Player.Nickname, Opponent.Nickname, first,
                              # time_control_name, game_end_reason, created_at, lexicon,
                              # rating_mode))
@@ -515,6 +490,7 @@ dat_behind_test = dat_behind_test %>%
     Player.Nickname1 =  Player.Nickname  , 
     Opponent.Nickname1 = Opponent.Nickname,
     Player.Score1 = Player.Score ,
+    Opponent.Score1 = Opponent.Score,
     Player.Rating1 = Player.Rating ,
     Opponent.Rating1 =  Opponent.Rating   , 
     first_number1 = first_number   ,
@@ -564,15 +540,17 @@ dat_test <- dat_test %>% relocate(lexicon1NSWL20, .before = lexicon1NWL20)
 # this does not working
 xgb_params <- list(
   booster = "gbtree",
-  eta = 0.05, #made this higher to speed up 
-  max_depth = 4,
-  gamma = 2,
+  eta = 0.1, #made this higher to speed up 
+  max_depth = 5,
+  gamma = 1,
   subsample = 1, #was 0.9
   colsample_bytree = 1,
   objective = "reg:squarederror",
   eval_metric = "rmse",
-  lambda = 250
+  lambda = 100
 )
+
+
 
 
 
@@ -586,21 +564,23 @@ xgb_model <- xgb.train(
 
 
 
+
 xgb_preds <- predict(xgb_model, as.matrix(dat_test), reshape = TRUE)
 xgb_preds <- as.data.frame(xgb_preds)
 output = data.frame(game_id = dat_test_keep$game_id, rating = xgb_preds$xgb_preds)
 
-write.csv(output, file = 'boast_5.3.prev.game.2.csv', row.names = F)
+write.csv(output, file = 'boast_5.3.prev.game.3.csv', row.names = F)
 
 #to do 
 # add points per turn for second part
 
-
+View(test)
+View(turns)
+View(dat_test)
 
 #IDEAS
 # win ratio
 # win ratio to that point
 # ave score per turn 
 # winner is from last game
-
 
