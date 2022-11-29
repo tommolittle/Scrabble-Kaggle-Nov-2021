@@ -176,17 +176,51 @@ ind =sample((unique_nicknames), floor(0.7*length(unique_nicknames)))
 
 
 
+dat = dat %>% arrange(Player.Nickname,created_at)
+dat_behind = dat[1:nrow(dat)-1,]
+dat_behind = rbind(dat[1,],dat_behind)
+dat_behind = dat_behind %>% 
+  rename(
+    game_id1 = game_id ,
+    Player.Nickname1 =  Player.Nickname  , 
+    Opponent.Nickname1 = Opponent.Nickname,
+    Player.Score1 = Player.Score ,
+    Player.Rating1 = Player.Rating ,
+    Opponent.Rating1 =  Opponent.Rating   , 
+     first_number1 = first_number   ,
+    difference_score1 = difference_score,
+    winner1 = winner,
+    points_per_turn1 = points_per_turn,
+    first1 = first,
+    time_control_name1  =   time_control_name,
+    game_end_reason1 = game_end_reason,
+    created_at1  =created_at,
+    lexicon1  =lexicon,
+    initial_time_seconds1 =initial_time_seconds,
+    increment_seconds1   = increment_seconds,
+    rating_mode1 =rating_mode,
+    max_overtime_minutes1 =max_overtime_minutes,
+    game_duration_seconds1 =game_duration_seconds
+  )
 
+
+dat = cbind(dat, dat_behind)
 
 dat_original = dat
 dat1 = dat
 dat1 = subset(dat, select = -c(rating_mode, lexicon,time_control_name,Opponent.Nickname,
                                game_id, first, game_end_reason,
-                               created_at))
+                               created_at, 
+                               rating_mode1, lexicon1,time_control_name1,Opponent.Nickname1,
+                               game_id1, first1, game_end_reason1, Player.Nickname1,
+                               created_at1, Player.Rating1))
 
 
 dat2 = model.matrix( ~ rating_mode + lexicon+time_control_name + Opponent.Nickname 
-                     + game_end_reason- 1, dat)       # added game end reason
+                     + game_end_reason 
+                     + rating_mode1 + lexicon1 +time_control_name1 + Opponent.Nickname1 
+                     + game_end_reason1
+                     - 1, dat)       # added game end reason
 
 dat = cbind(dat1, dat2)
 
@@ -195,7 +229,7 @@ dat = cbind(dat1, dat2)
 train1 = dat[dat[,1] %in% ind,]
 val1 = dat[!(dat[,1] %in% ind),]
 
-dat =  subset(dat, select = -c(Player.Nickname))
+dat =  subset(dat, select = -c(Player.Nickname ))
 train1 =  subset(train1, select = -c(Player.Nickname))
 val1 =  subset(val1, select = -c(Player.Nickname))
 
@@ -257,6 +291,7 @@ dat_pred = cbind(dat_original,xgb_preds_full)
 
 sqrt(mean((unlist(val1$Player.Rating-xgb_preds))^2))
 #current is 149.64
+#139???
 
 
 xgbcv <- xgb.cv( params = xgb_params, data = xgb_train, 
@@ -457,6 +492,7 @@ join3 = subset(join3, select = -c(ave_player_rating, w_ave_player_rating, l_ave_
 
 
 head(dat_test)
+dat_test = left_join(dat_test, average_score)
 dat_test = left_join(dat_test, games)
 winner = ifelse(dat_test$difference_score>0 , 1,0)
 winner = ifelse(dat_test$difference_score<0 , winner-1,winner)
@@ -470,19 +506,61 @@ dat_test_keep = dat_test
 #dat_test <- dat_test%>% select(-Player.Rating)
 
 
+dat_test = dat_test %>% arrange(Player.Nickname,created_at)
+dat_behind_test = dat_test[1:nrow(dat_test)-1,]
+dat_behind_test = rbind(dat_test[1,],dat_behind_test)
+dat_behind_test = dat_behind_test %>% 
+  rename(
+    game_id1 = game_id ,
+    Player.Nickname1 =  Player.Nickname  , 
+    Opponent.Nickname1 = Opponent.Nickname,
+    Player.Score1 = Player.Score ,
+    Player.Rating1 = Player.Rating ,
+    Opponent.Rating1 =  Opponent.Rating   , 
+    first_number1 = first_number   ,
+    difference_score1 = difference_score,
+    winner1 = winner,
+    points_per_turn1 = points_per_turn,
+    first1 = first,
+    time_control_name1  =   time_control_name,
+    game_end_reason1 = game_end_reason,
+    created_at1  =created_at,
+    lexicon1  =lexicon,
+    initial_time_seconds1 =initial_time_seconds,
+    increment_seconds1   = increment_seconds,
+    rating_mode1 =rating_mode,
+    max_overtime_minutes1 =max_overtime_minutes,
+    game_duration_seconds1 =game_duration_seconds
+  )
+
+
+dat_test = cbind(dat_test, dat_behind_test)
+
 dat_test1 = subset(dat_test, select = -c(rating_mode, lexicon,time_control_name,Opponent.Nickname,
-                               game_id, first, game_end_reason,
-                               created_at))
+                                         game_id, first, game_end_reason,
+                                         created_at, 
+                                         rating_mode1, lexicon1,time_control_name1,Opponent.Nickname1,
+                                         game_id1, first1, game_end_reason1, Player.Nickname1,
+                                         created_at1, Player.Rating1))
 
 
 dat_test2 = model.matrix( ~ rating_mode + lexicon+time_control_name + Opponent.Nickname 
-                     + game_end_reason- 1, dat_test)       # added game end reason
+                          + game_end_reason 
+                          + rating_mode1 + lexicon1 +time_control_name1 + Opponent.Nickname1 
+                          + game_end_reason1
+                          - 1, dat_test)       # added game end reason
+
+                    
+
 
 dat_test = cbind(dat_test1, dat_test2)
 dat_test = dat_test %>% select(-c(Player.Rating, Player.Nickname))
 lexiconNSWL20 = data.frame(lexiconNSWL20 = 0 )
 dat_test = cbind(dat_test,lexiconNSWL20 )
 dat_test <- dat_test %>% relocate(lexiconNSWL20, .before = lexiconNWL20)
+lexicon1NSWL20 = data.frame(lexicon1NSWL20 = 0 )
+dat_test = cbind(dat_test,lexicon1NSWL20 )
+dat_test <- dat_test %>% relocate(lexicon1NSWL20, .before = lexicon1NWL20)
 # this does not working
 xgb_params <- list(
   booster = "gbtree",
@@ -500,7 +578,7 @@ xgb_params <- list(
 
 xgb_model <- xgb.train(
   params = xgb_params,
-  data = xgb_train,
+  data = xgb_dat,
   nrounds = 100,
   verbose = 1
 )
@@ -512,7 +590,7 @@ xgb_preds <- predict(xgb_model, as.matrix(dat_test), reshape = TRUE)
 xgb_preds <- as.data.frame(xgb_preds)
 output = data.frame(game_id = dat_test_keep$game_id, rating = xgb_preds$xgb_preds)
 
-write.csv(output, file = 'boast_5.3.csv', row.names = F)
+write.csv(output, file = 'boast_5.3.prev.game.2.csv', row.names = F)
 
 #to do 
 # add points per turn for second part
