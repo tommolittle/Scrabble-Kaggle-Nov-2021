@@ -283,6 +283,9 @@ mat <- xgb.importance (feature_names = colnames(X_train),model = xgb_model)
 xgb.plot.importance (importance_matrix = mat[1:20]) 
 
 
+dat_player = dat_pred[dat_pred$Player.Nickname==unique_nicknames[3],]
+ggplot(dat_player, aes(x = created_at)) +
+  geom_point(aes(x = created_at, y=Player.Rating, color = factor(winner)))
 
 # messing around with graphs
 do_graphs = FALSE
@@ -511,9 +514,15 @@ output = data.frame(game_id = dat_test_keep$game_id, rating = xgb_preds$xgb_pred
 
 write.csv(output, file = 'boast_5.3.csv', row.names = F)
 
+#to do 
+# add points per turn for second part
+
+
 
 #IDEAS
 # win ratio
 # win ratio to that point
 # ave score per turn 
+# winner is from last game
+
 
