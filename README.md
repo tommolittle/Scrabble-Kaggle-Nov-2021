@@ -6,7 +6,9 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of Scrabble Kaggle Nov 2022 is to …
+The goal of the Scrabble Kaggle Competition and associated code is to
+predict the players rating. The performance of the model is evaluated by
+the RMSE of the predictions.
 
 What is special about using `README.Rmd` instead of just `README.md`?
 You can include R chunks like so:

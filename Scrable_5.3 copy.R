@@ -637,4 +637,5 @@ View(dat_test)
 
 ggplot(data = dat_original) + 
   geom_point(mapping = aes(x = Player.Rating, y = Player.Score), position = "jitter") + 
-  facet_grid(rating_mode~ winner)
+  facet_grid(rating_mode~ winner) +
+  coord_polar()
