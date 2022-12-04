@@ -233,9 +233,37 @@ dat_behind2 = dat_behind2 %>%
     game_duration_seconds2 =game_duration_seconds
   )
 
+dat_behind3 = dat[1:(nrow(dat)-3),]
+dat_behind3 = rbind(dat[1:3,],dat_behind3)
+dat_behind3 = dat_behind3 %>% 
+  rename(
+    game_id3 = game_id ,
+    Player.Nickname3 =  Player.Nickname  , 
+    Opponent.Nickname3 = Opponent.Nickname,
+    Player.Score3 = Player.Score ,
+    Opponent.Score3 = Opponent.Score,
+    Player.Rating3 = Player.Rating ,
+    Opponent.Rating3 =  Opponent.Rating   , 
+    first_number3 = first_number   ,
+    difference_score3 = difference_score,
+    winner3 = winner,
+    points_per_turn3 = points_per_turn,
+    first3 = first,
+    time_control_name3  =   time_control_name,
+    game_end_reason3 = game_end_reason,
+    created_at3  =created_at,
+    lexicon3  =lexicon,
+    initial_time_seconds3 =initial_time_seconds,
+    increment_seconds3   = increment_seconds,
+    rating_mode3 =rating_mode,
+    max_overtime_minutes3 =max_overtime_minutes,
+    game_duration_seconds3 =game_duration_seconds
+  )
+
 
 dat = cbind(dat, dat_behind)
 dat = cbind(dat, dat_behind2)
+dat = cbind(dat, dat_behind3)
 
 dat_original = dat
 dat1 = dat
@@ -250,6 +278,9 @@ dat1 = subset(dat1, select = -c(rating_mode1, lexicon1,time_control_name1,
 dat1 = subset(dat1, select = -c(rating_mode2, lexicon2,time_control_name2,Opponent.Nickname2,
                                 game_id2, first2, game_end_reason2, Player.Nickname2,
                                 created_at2, Player.Rating2))
+dat1 = subset(dat1, select = -c(rating_mode3, lexicon3,time_control_name3,Opponent.Nickname3,
+                                game_id3, first3, game_end_reason3, Player.Nickname3,
+                                created_at3, Player.Rating3))
 
 dat2 = model.matrix( ~ rating_mode + lexicon+time_control_name + Opponent.Nickname 
                      + game_end_reason 
@@ -257,6 +288,8 @@ dat2 = model.matrix( ~ rating_mode + lexicon+time_control_name + Opponent.Nickna
                      + game_end_reason1
                      + rating_mode2 + lexicon2 +time_control_name2 + Opponent.Nickname2
                      + game_end_reason2
+                     + rating_mode3 + lexicon3 +time_control_name3 + Opponent.Nickname3
+                     + game_end_reason3
                      - 1, dat)       # added game end reason
 
 dat = cbind(dat1, dat2)
@@ -332,6 +365,7 @@ sqrt(mean((unlist(val1$Player.Rating-xgb_preds))^2))
 #current is 149.64
 #139???
 #134
+# 133.5
 
 # 111???
 xgbcv <- xgb.cv( params = xgb_params, data = xgb_train, 
@@ -367,7 +401,7 @@ print(test)
 
 
 # messing around with graphs
-do_graphs = FALSE
+do_graphs = TRUE
 if (do_graphs == TRUE){
 quartz()
 for (i in ind){
@@ -551,8 +585,65 @@ dat_behind_test = dat_behind_test %>%
     game_duration_seconds1 =game_duration_seconds
   )
 
+dat_behind_test2 = dat_test[1:(nrow(dat_test)-2),]
+dat_behind_test2 = rbind(dat_test[1:2,],dat_behind_test2)
+dat_behind_test2 = dat_behind_test2 %>% 
+  rename(
+    game_id2 = game_id ,
+    Player.Nickname2 =  Player.Nickname  , 
+    Opponent.Nickname2 = Opponent.Nickname,
+    Player.Score2 = Player.Score ,
+    Opponent.Score2 = Opponent.Score,
+    Player.Rating2 = Player.Rating ,
+    Opponent.Rating2 =  Opponent.Rating   , 
+    first_number2 = first_number   ,
+    difference_score2 = difference_score,
+    winner2 = winner,
+    points_per_turn2 = points_per_turn,
+    first2 = first,
+    time_control_name2  =   time_control_name,
+    game_end_reason2 = game_end_reason,
+    created_at2  =created_at,
+    lexicon2  =lexicon,
+    initial_time_seconds2 =initial_time_seconds,
+    increment_seconds2   = increment_seconds,
+    rating_mode2 =rating_mode,
+    max_overtime_minutes2 =max_overtime_minutes,
+    game_duration_seconds2 =game_duration_seconds
+  )
+
+dat_behind_test3 = dat_test[1:(nrow(dat_test)-3),]
+dat_behind_test3 = rbind(dat_test[1:3,],dat_behind_test3)
+dat_behind_test3 = dat_behind_test3 %>% 
+  rename(
+    game_id3 = game_id ,
+    Player.Nickname3 =  Player.Nickname  , 
+    Opponent.Nickname3 = Opponent.Nickname,
+    Player.Score3 = Player.Score ,
+    Opponent.Score3 = Opponent.Score,
+    Player.Rating3 = Player.Rating ,
+    Opponent.Rating3 =  Opponent.Rating   , 
+    first_number3 = first_number   ,
+    difference_score3 = difference_score,
+    winner3 = winner,
+    points_per_turn3 = points_per_turn,
+    first3 = first,
+    time_control_name3  =   time_control_name,
+    game_end_reason3 = game_end_reason,
+    created_at3  =created_at,
+    lexicon3  =lexicon,
+    initial_time_seconds3 =initial_time_seconds,
+    increment_seconds3   = increment_seconds,
+    rating_mode3 =rating_mode,
+    max_overtime_minutes3 =max_overtime_minutes,
+    game_duration_seconds3 =game_duration_seconds
+  )
+
+
 
 dat_test = cbind(dat_test, dat_behind_test)
+dat_test = cbind(dat_test, dat_behind_test2)
+dat_test = cbind(dat_test, dat_behind_test3)
 
 dat_test1 = subset(dat_test, select = -c(rating_mode, lexicon,time_control_name,Opponent.Nickname,
                                          game_id, first, game_end_reason,
@@ -561,11 +652,26 @@ dat_test1 = subset(dat_test, select = -c(rating_mode, lexicon,time_control_name,
                                          game_id1, first1, game_end_reason1, Player.Nickname1,
                                          created_at1, Player.Rating1))
 
+dat_test1 = subset(dat_test1, select = -c( 
+                                         rating_mode2, lexicon2,time_control_name2,Opponent.Nickname2,
+                                         game_id2, first2, game_end_reason2, Player.Nickname2,
+                                         created_at2, Player.Rating2))
+
+
+dat_test1 = subset(dat_test1, select = -c( 
+  rating_mode3, lexicon3,time_control_name3,Opponent.Nickname3,
+  game_id3, first3, game_end_reason3, Player.Nickname3,
+  created_at3, Player.Rating3))
+
 
 dat_test2 = model.matrix( ~ rating_mode + lexicon+time_control_name + Opponent.Nickname 
                           + game_end_reason 
                           + rating_mode1 + lexicon1 +time_control_name1 + Opponent.Nickname1 
                           + game_end_reason1
+                          + rating_mode2 + lexicon2 +time_control_name2 + Opponent.Nickname2
+                          + game_end_reason2
+                          + rating_mode3 + lexicon3 +time_control_name3 + Opponent.Nickname3
+                          + game_end_reason3
                           - 1, dat_test)       # added game end reason
 
                     
@@ -577,8 +683,15 @@ lexiconNSWL20 = data.frame(lexiconNSWL20 = 0 )
 dat_test = cbind(dat_test,lexiconNSWL20 )
 dat_test <- dat_test %>% relocate(lexiconNSWL20, .before = lexiconNWL20)
 lexicon1NSWL20 = data.frame(lexicon1NSWL20 = 0 )
+lexicon2NSWL20 = data.frame(lexicon2NSWL20 = 0 )
+lexicon3NSWL20 = data.frame(lexicon3NSWL20 = 0 )
+
 dat_test = cbind(dat_test,lexicon1NSWL20 )
+dat_test = cbind(dat_test,lexicon2NSWL20 )
+dat_test = cbind(dat_test,lexicon3NSWL20 )
 dat_test <- dat_test %>% relocate(lexicon1NSWL20, .before = lexicon1NWL20)
+dat_test <- dat_test %>% relocate(lexicon2NSWL20, .before = lexicon2NWL20)
+dat_test <- dat_test %>% relocate(lexicon3NSWL20, .before = lexicon3NWL20)
 # this does not working
 xgb_params <- list(
   booster = "gbtree",
@@ -591,6 +704,7 @@ xgb_params <- list(
   eval_metric = "rmse",
   lambda = 100
 )
+
 
 
 
@@ -611,7 +725,7 @@ xgb_preds2 <- predict(xgb_model, as.matrix(dat_test), reshape = TRUE)
 xgb_preds2 <- as.data.frame(xgb_preds2)
 output = data.frame(game_id = dat_test_keep$game_id, rating = xgb_preds2$xgb_preds2)
 
-write.csv(output, file = 'boast_5.3.prev.game.6.csv', row.names = F)
+write.csv(output, file = 'boast_5.3.prev.game.7.csv', row.names = F)
 
 #to do 
 # add points per turn for second part
