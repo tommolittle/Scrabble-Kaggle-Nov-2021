@@ -1,4 +1,4 @@
-setwd("~/Desktop/Kaggle/2 Scrabble/scrabble-player-rating")
+setwd("~/Desktop/R/Kaggle/2 Scrabble/scrabble-player-rating")
 rm(list=ls())
 
 ### Load libraries ###
@@ -205,22 +205,58 @@ dat_behind = dat_behind %>%
   )
 
 
+
+dat_behind2 = dat[1:(nrow(dat)-2),]
+dat_behind2 = rbind(dat[1:2,],dat_behind2)
+dat_behind2 = dat_behind2 %>% 
+  rename(
+    game_id2 = game_id ,
+    Player.Nickname2 =  Player.Nickname  , 
+    Opponent.Nickname2 = Opponent.Nickname,
+    Player.Score2 = Player.Score ,
+    Opponent.Score2 = Opponent.Score,
+    Player.Rating2 = Player.Rating ,
+    Opponent.Rating2 =  Opponent.Rating   , 
+    first_number2 = first_number   ,
+    difference_score2 = difference_score,
+    winner2 = winner,
+    points_per_turn2 = points_per_turn,
+    first2 = first,
+    time_control_name2  =   time_control_name,
+    game_end_reason2 = game_end_reason,
+    created_at2  =created_at,
+    lexicon2  =lexicon,
+    initial_time_seconds2 =initial_time_seconds,
+    increment_seconds2   = increment_seconds,
+    rating_mode2 =rating_mode,
+    max_overtime_minutes2 =max_overtime_minutes,
+    game_duration_seconds2 =game_duration_seconds
+  )
+
+
 dat = cbind(dat, dat_behind)
+dat = cbind(dat, dat_behind2)
 
 dat_original = dat
 dat1 = dat
-dat1 = subset(dat, select = -c(rating_mode, lexicon,time_control_name,Opponent.Nickname,
-                               game_id, first, game_end_reason,
-                               created_at, 
-                               rating_mode1, lexicon1,time_control_name1,Opponent.Nickname1,
-                               game_id1, first1, game_end_reason1, Player.Nickname1,
-                               created_at1, Player.Rating1))
+dat1 = subset(dat1, select = -c(rating_mode, lexicon,time_control_name,Opponent.Nickname,
+                               game_id, first, game_end_reason, created_at
+                               ))
+dat1 = subset(dat1, select = -c(rating_mode1, lexicon1,time_control_name1,
+                                Opponent.Nickname1,
+                                game_id1, first1, game_end_reason1, Player.Nickname1,
+                                created_at1, Player.Rating1))
 
+dat1 = subset(dat1, select = -c(rating_mode2, lexicon2,time_control_name2,Opponent.Nickname2,
+                                game_id2, first2, game_end_reason2, Player.Nickname2,
+                                created_at2, Player.Rating2))
 
 dat2 = model.matrix( ~ rating_mode + lexicon+time_control_name + Opponent.Nickname 
                      + game_end_reason 
                      + rating_mode1 + lexicon1 +time_control_name1 + Opponent.Nickname1 
                      + game_end_reason1
+                     + rating_mode2 + lexicon2 +time_control_name2 + Opponent.Nickname2
+                     + game_end_reason2
                      - 1, dat)       # added game end reason
 
 dat = cbind(dat1, dat2)
@@ -265,7 +301,7 @@ xgbcv <- xgb.cv( params = xgb_params_default, data = xgb_train, nrounds = 200, n
 xgb_params <- list(
   booster = "gbtree",
    eta = 0.1, #made this higher to speed up 
-   max_depth = 5,
+   max_depth = 6,
    gamma = 1,
    subsample = 1, #was 0.9
    colsample_bytree = 1,
@@ -280,7 +316,7 @@ xgb_params <- list(
 xgb_model <- xgb.train(
   params = xgb_params,
   data = xgb_train,
-  nrounds = 100,
+  nrounds = 90,
   verbose =1
 )
 
@@ -295,6 +331,7 @@ dat_pred = cbind(dat_original,xgb_preds_full)
 sqrt(mean((unlist(val1$Player.Rating-xgb_preds))^2)) 
 #current is 149.64
 #139???
+#134
 
 # 111???
 xgbcv <- xgb.cv( params = xgb_params, data = xgb_train, 
@@ -318,21 +355,25 @@ dat_pred2 = cbind(dat_original,xgb_preds_full2)
 sqrt(mean((unlist(val1$Player.Rating-xgb_preds_full2))^2))
 
 mat <- xgb.importance (feature_names = colnames(X_train),model = xgb_model)
-xgb.plot.importance (importance_matrix = mat[1:20]) 
+xgb.plot.importance (importance_matrix = mat[1:70]) 
 
 
 dat_player = dat_pred[dat_pred$Player.Nickname==unique_nicknames[3],]
 ggplot(dat_player, aes(x = created_at)) +
   geom_point(aes(x = created_at, y=Player.Rating, color = factor(winner)))
 
+test <- chisq.test(X_train$lexicon1NSWL20, y_train)
+print(test)
+
+
 # messing around with graphs
 do_graphs = FALSE
 if (do_graphs == TRUE){
 quartz()
-for (i in 1:length(unique_nicknames)){
+for (i in ind){
 
-  dat_player = dat_pred[dat_pred$Player.Nickname==unique_nicknames[i],]
-  title_p = dat_player$Player.Nickname[i]
+  dat_player = dat_pred[dat_pred$Player.Nickname==i,]
+  title_p = i
   p <- ggplot(dat_player, aes(x = created_at)) +
     geom_point(aes(y=Player.Rating, color = "actual"))+
     geom_point(aes(y=xgb_preds_full, color = "prediction"))+
@@ -467,7 +508,7 @@ dat_test = cbind(dat_test,winner)
 head(dat_test)
 winner = ifelse(dat_test$difference_score>0 , 1,0)
 winner = ifelse(dat_test$difference_score<0 , winner-1,winner)
-dat_test_keep = dat_test
+
 dat_test = left_join(dat_test, average_score)
 dat_test = left_join(dat_test, games)
 
@@ -482,6 +523,7 @@ dat_test = left_join(dat_test, games)
 
 
 dat_test = dat_test %>% arrange(Player.Nickname,created_at)
+dat_test_keep = dat_test
 dat_behind_test = dat_test[1:nrow(dat_test)-1,]
 dat_behind_test = rbind(dat_test[1,],dat_behind_test)
 dat_behind_test = dat_behind_test %>% 
@@ -569,7 +611,7 @@ xgb_preds2 <- predict(xgb_model, as.matrix(dat_test), reshape = TRUE)
 xgb_preds2 <- as.data.frame(xgb_preds2)
 output = data.frame(game_id = dat_test_keep$game_id, rating = xgb_preds2$xgb_preds2)
 
-write.csv(output, file = 'boast_5.3.prev.game.3.csv', row.names = F)
+write.csv(output, file = 'boast_5.3.prev.game.6.csv', row.names = F)
 
 #to do 
 # add points per turn for second part
@@ -577,6 +619,11 @@ write.csv(output, file = 'boast_5.3.prev.game.3.csv', row.names = F)
 View(test)
 View(turns)
 View(dat_test)
+#plot(dat_test$Player.Score~dat_test$points_per_turn)
+#plot(dat$Player.Score~dat$points_per_turn)
+# so the link is fine
+
+
 
 #IDEAS
 # win ratio
@@ -586,3 +633,9 @@ View(dat_test)
 
 #IDEAS TO UNMESS THIS
 # maybe it has to do with the lexicon?
+
+
+ggplot(data = dat_original) + 
+  geom_point(mapping = aes(x = Player.Rating, y = Player.Score), position = "jitter") + 
+  facet_grid(rating_mode~ winner) +
+  coord_polar()
